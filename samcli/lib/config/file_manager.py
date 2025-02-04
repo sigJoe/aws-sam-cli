@@ -193,6 +193,20 @@ class YamlFileManager(FileManager):
             LOG.debug(f"OSError occurred while reading {YamlFileManager.file_format} file: {str(e)}")
         except YAMLError as e:
             raise FileParseException(e) from e
+        params = yaml_doc.get('default', {}).get('build', {}).get('parameters', {})
+        if 'parameter_overrides' in params and isinstance(params['parameter_overrides'], dict):
+            def format_value(value):
+                if isinstance(value, bool):
+                    return str(value).lower()
+                if isinstance(value, int):
+                    return str(value)
+                if isinstance(value, list):
+                    return f'"{",".join(map(str, value))}"'
+                return f'"{value}"'
+
+            params['parameter_overrides'] = [
+                f"ParameterKey={k},ParameterValue={format_value(v)} " for k, v in params['parameter_overrides'].items()
+            ]
 
         return yaml_doc
 
